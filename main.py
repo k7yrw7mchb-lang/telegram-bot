@@ -1,9 +1,9 @@
 import os
-import openai
+from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -20,12 +20,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 {user_text}
 """
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
 
-    reply = response['choices'][0]['message']['content']
+    reply = response.choices[0].message.content
 
     await update.message.reply_text(reply)
 
