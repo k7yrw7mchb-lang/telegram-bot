@@ -1,27 +1,16 @@
 import os
 from openai import OpenAI
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-# --- ПРОВЕРКА КЛЮЧЕЙ ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+# OpenAI клиент
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-if not OPENAI_API_KEY:
-    raise Exception("❌ OPENAI_API_KEY НЕ НАЙДЕН")
-
-if not TELEGRAM_BOT_TOKEN:
-    raise Exception("❌ TELEGRAM_BOT_TOKEN НЕ НАЙДЕН")
-
-# --- КЛИЕНТ OPENAI ---
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-# --- ОБРАБОТКА СООБЩЕНИЙ ---
+# обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        user_text = update.message.text
+    user_text = update.message.text
 
-        prompt = f"""
+    prompt = f"""
 Ты мой личный ассистент.
 
 Проанализируй сообщение и ответь:
@@ -33,25 +22,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 {user_text}
 """
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-
-        reply = response.choices[0].message.content
-
-        await update.message.reply_text(reply)
-
-    except Exception as e:
-        await update.message.reply_text(f"Ошибка: {str(e)}")
-
-# --- ЗАПУСК ---
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
     )
 
-    print("🚀 Бот запущен")
+    answer = response.choices[0].message.content
+    await update.message.reply_text(answer)
+
+# запуск бота
+def main():
+    app = ApplicationBuilder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    print("Бот запущен 🚀")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
